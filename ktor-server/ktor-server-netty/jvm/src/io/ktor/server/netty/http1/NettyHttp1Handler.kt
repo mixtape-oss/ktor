@@ -59,6 +59,8 @@ internal class NettyHttp1Handler(
             coroutineContext
         )
 
+        context.channel().config().isAutoRead = false
+        context.channel().read()
         context.pipeline().apply {
             addLast(RequestBodyHandler(context))
             addLast(callEventGroup, NettyApplicationCallHandler(userContext, enginePipeline))
