@@ -120,11 +120,3 @@ internal class CIOEngine(
     replaceWith = ReplaceWith("ClientEngineClosedException")
 )
 public class ClientClosedException(cause: Throwable? = null) : IllegalStateException("Client already closed", cause)
-
-public suspend fun main() {
-    val client = HttpClient(CIO)
-
-    val resp = client.get("https://interactions.mixtape.systems/v1")
-
-    println(resp.bodyAsText())
-}
