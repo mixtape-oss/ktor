@@ -55,10 +55,9 @@ public class Url internal constructor(
     }
 
     public val encodedQuery: String by lazy {
-        if (parameters.isEmpty()) {
-            return@lazy ""
-        }
         val queryStart = urlString.indexOf('?') + 1
+        if (queryStart == 0) return@lazy ""
+
         val queryEnd = urlString.indexOf('#', queryStart)
         if (queryEnd == -1) {
             return@lazy urlString.substring(queryStart)
