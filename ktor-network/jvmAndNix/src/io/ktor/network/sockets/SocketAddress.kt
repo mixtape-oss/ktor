@@ -4,18 +4,21 @@
 
 package io.ktor.network.sockets
 
+import java.net.InetAddress
+
 public expect sealed class SocketAddress
 
-public expect class InetSocketAddress(
-    hostname: String,
-    port: Int
-) : SocketAddress {
+public expect class InetSocketAddress : SocketAddress {
+    public constructor(hostname: String?, port: Int)
+
+    public constructor(inetAddress: InetAddress, port: Int)
+
     /**
      * The hostname of the socket address.
      *
      * Note that this may trigger a name service reverse lookup.
      */
-    public val hostname: String
+    public val hostname: String?
 
     /**
      * The port number of the socket address.
@@ -27,7 +30,7 @@ public expect class InetSocketAddress(
      *
      * Note that this may trigger a name service reverse lookup.
      */
-    public operator fun component1(): String
+    public operator fun component1(): String?
 
     /**
      * The port number of the socket address.
@@ -39,7 +42,7 @@ public expect class InetSocketAddress(
      *
      * Note that this may trigger a name service reverse lookup.
      */
-    public fun copy(hostname: String = this.hostname, port: Int = this.port): InetSocketAddress
+    public fun copy(hostname: String? = this.hostname, port: Int = this.port): InetSocketAddress
     override fun equals(other: Any?): Boolean
     override fun hashCode(): Int
     override fun toString(): String

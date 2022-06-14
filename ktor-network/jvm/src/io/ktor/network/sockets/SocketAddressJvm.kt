@@ -5,6 +5,7 @@
 package io.ktor.network.sockets
 
 import java.lang.reflect.*
+import java.net.InetAddress
 
 public actual sealed class SocketAddress {
     internal abstract val address: java.net.SocketAddress
@@ -15,19 +16,22 @@ public actual class InetSocketAddress internal constructor(
 ) : SocketAddress() {
 
     // May trigger a name service reverse lookup when called.
-    public actual val hostname: String get() = address.hostName
+    public actual val hostname: String? get() = address.hostName
 
     public actual val port: Int get() = address.port
 
-    public actual constructor(hostname: String, port: Int) :
+    public actual constructor(hostname: String?, port: Int) :
         this(java.net.InetSocketAddress(hostname, port))
 
-    public actual operator fun component1(): String = hostname
+    public actual constructor(inetAddress: InetAddress, port: Int) :
+        this(java.net.InetSocketAddress(inetAddress, port))
+
+    public actual operator fun component1(): String? = hostname
 
     public actual operator fun component2(): Int = port
 
     public actual fun copy(
-        hostname: String,
+        hostname: String?,
         port: Int
     ): InetSocketAddress = InetSocketAddress(
         hostname = hostname,

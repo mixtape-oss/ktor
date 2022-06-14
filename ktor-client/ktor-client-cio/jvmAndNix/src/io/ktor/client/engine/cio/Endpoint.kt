@@ -13,6 +13,7 @@ import io.ktor.network.sockets.*
 import io.ktor.network.tls.*
 import io.ktor.util.*
 import io.ktor.util.date.*
+import io.ktor.util.network.*
 import io.ktor.utils.io.core.*
 import kotlinx.atomicfu.*
 import kotlinx.coroutines.*
@@ -20,10 +21,7 @@ import kotlinx.coroutines.channels.*
 import kotlin.coroutines.*
 
 internal class Endpoint(
-    private val host: String,
-    private val port: Int,
-    private val proxy: ProxyConfig?,
-    private val secure: Boolean,
+    private val route: Route,
     private val config: CIOEngineConfig,
     private val connectionFactory: ConnectionFactory,
     override val coroutineContext: CoroutineContext,
@@ -34,7 +32,7 @@ internal class Endpoint(
     private val deliveryPoint: Channel<RequestTask> = Channel()
     private val maxEndpointIdleTime: Long = 2 * config.endpoint.connectTimeout
 
-    private val timeout = launch(coroutineContext + CoroutineName("Endpoint timeout($host:$port)")) {
+    private val timeout = launch(coroutineContext + CoroutineName("Endpoint timeout(${route.host})")) {
         try {
             while (true) {
                 val remaining = (lastActivity.value + maxEndpointIdleTime).timestamp - GMTDate().timestamp
@@ -118,7 +116,7 @@ internal class Endpoint(
             setupTimeout(callContext, request, timeout)
 
             val requestTime = GMTDate()
-            writeRequest(request, output, callContext, proxy != null)
+            writeRequest(request, output, callContext, route.proxy != null)
             return readResponse(requestTime, request, input, originOutput, callContext)
         } catch (cause: Throwable) {
             throw cause.mapToKtor(request)
@@ -136,7 +134,7 @@ internal class Endpoint(
             config.endpoint.keepAliveTime,
             config.endpoint.pipelineMaxSize,
             connection,
-            proxy != null,
+            route.proxy != null,
             deliveryPoint,
             coroutineContext
         )
@@ -153,10 +151,8 @@ internal class Endpoint(
 
         try {
             repeat(connectAttempts) {
-                val address = InetSocketAddress(host, port)
-
                 val connect: suspend CoroutineScope.() -> Socket = {
-                    connectionFactory.connect(address) {
+                    connectionFactory.connect(route.host, route.localAddress) {
                         this.socketTimeout = socketTimeout
                     }
                 }
@@ -174,16 +170,18 @@ internal class Endpoint(
                 }
 
                 val connection = socket.connection()
-                if (!secure) return@connect connection
+                if (!route.secure) return@connect connection
 
                 try {
-                    if (proxy?.type == ProxyType.HTTP) {
+                    if (route.proxy?.type == ProxyType.HTTP) {
                         startTunnel(requestData, connection.output, connection.input)
                     }
+
                     val tlsSocket = connection.tls(coroutineContext) {
                         takeFrom(config.https)
-                        serverName = serverName ?: address.hostname
+                        serverName = serverName ?: route.host.toJavaAddress().hostname
                     }
+
                     return tlsSocket.connection()
                 } catch (cause: Throwable) {
                     try {

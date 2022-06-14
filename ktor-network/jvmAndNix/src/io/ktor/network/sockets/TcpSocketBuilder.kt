@@ -33,8 +33,9 @@ public class TcpSocketBuilder(
      */
     public suspend fun connect(
         remoteAddress: SocketAddress,
+        localAddress: SocketAddress? = null,
         configure: SocketOptions.TCPClientSocketOptions.() -> Unit = {}
-    ): Socket = connect(selector, remoteAddress, options.peer().tcp().apply(configure))
+    ): Socket = connect(selector, remoteAddress, localAddress, options.peer().tcp().apply(configure))
 
     /**
      * Bind server socket to listen to [localAddress].

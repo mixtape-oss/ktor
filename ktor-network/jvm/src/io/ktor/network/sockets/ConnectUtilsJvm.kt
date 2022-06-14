@@ -12,10 +12,20 @@ import java.nio.channels.spi.*
 internal actual suspend fun connect(
     selector: SelectorManager,
     remoteAddress: SocketAddress,
+    localAddress: SocketAddress?,
     socketOptions: SocketOptions.TCPClientSocketOptions
 ): Socket = selector.buildOrClose({ openSocketChannelFor(remoteAddress) }) {
     if (remoteAddress is InetSocketAddress) assignOptions(socketOptions)
     nonBlocking()
+
+    if (localAddress != null) {
+        val localSocketAddr = localAddress.toJavaAddress()
+        if (java7NetworkApisAvailable) {
+            bind(localSocketAddr)
+        } else {
+            socket().bind(localSocketAddr)
+        }
+    }
 
     SocketImpl(this, selector, socketOptions).apply {
         connect(remoteAddress.toJavaAddress())

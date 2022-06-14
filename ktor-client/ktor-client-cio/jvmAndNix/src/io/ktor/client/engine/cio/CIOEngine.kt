@@ -4,17 +4,16 @@
 
 package io.ktor.client.engine.cio
 
+import io.ktor.client.*
 import io.ktor.client.engine.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.websocket.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import io.ktor.client.utils.*
-import io.ktor.http.*
 import io.ktor.network.selector.*
 import io.ktor.util.*
 import io.ktor.util.collections.*
-import io.ktor.util.network.*
-import io.ktor.utils.io.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 import kotlin.coroutines.*
@@ -74,7 +73,8 @@ internal class CIOEngine(
         val callContext = callContext()
 
         while (coroutineContext.isActive) {
-            val endpoint = selectEndpoint(data.url, proxy)
+            val route = config.routePlanner.planRoute(data, proxy)
+            val endpoint = selectEndpoint(route)
 
             try {
                 return endpoint.execute(data, callContext)
@@ -100,33 +100,14 @@ internal class CIOEngine(
         (requestsJob[Job] as CompletableJob).complete()
     }
 
-    private fun selectEndpoint(url: Url, proxy: ProxyConfig?): Endpoint {
-        val host: String
-        val port: Int
-        val protocol: URLProtocol = url.protocol
-
-        if (proxy != null) {
-            val proxyAddress = proxy.resolveAddress()
-            host = proxyAddress.hostname
-            port = proxyAddress.port
-        } else {
-            host = url.host
-            port = url.port
-        }
-
-        val endpointId = "$host:$port:$protocol"
-
-        return endpoints.computeIfAbsent(endpointId) {
-            val secure = (protocol.isSecure())
+    private fun selectEndpoint(route: Route): Endpoint {
+        return endpoints.computeIfAbsent(route.id) {
             Endpoint(
-                host,
-                port,
-                proxy,
-                secure,
+                route,
                 config,
                 connectionFactory,
                 coroutineContext,
-                onDone = { endpoints.remove(endpointId) }
+                onDone = { endpoints.remove(route.id) }
             )
         }
     }
@@ -139,3 +120,11 @@ internal class CIOEngine(
     replaceWith = ReplaceWith("ClientEngineClosedException")
 )
 public class ClientClosedException(cause: Throwable? = null) : IllegalStateException("Client already closed", cause)
+
+public suspend fun main() {
+    val client = HttpClient(CIO)
+
+    val resp = client.get("https://interactions.mixtape.systems/v1")
+
+    println(resp.bodyAsText())
+}

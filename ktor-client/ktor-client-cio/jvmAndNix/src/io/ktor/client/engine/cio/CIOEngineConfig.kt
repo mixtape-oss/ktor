@@ -23,6 +23,11 @@ public class CIOEngineConfig : HttpClientEngineConfig() {
     public val https: TLSConfigBuilder = TLSConfigBuilder()
 
     /**
+     * Allows you to plan the route used by each request.
+     */
+    public var routePlanner: RoutePlanner = DefaultRoutePlanner()
+
+    /**
      * Specifies the maximum number of connections used to make [requests](https://ktor.io/docs/request.html).
      */
     public var maxConnectionsCount: Int = 1000

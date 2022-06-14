@@ -9,6 +9,7 @@ import io.ktor.network.selector.*
 internal expect suspend fun connect(
     selector: SelectorManager,
     remoteAddress: SocketAddress,
+    localAddress: SocketAddress?,
     socketOptions: SocketOptions.TCPClientSocketOptions
 ): Socket
 

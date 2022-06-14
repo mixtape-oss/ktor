@@ -15,12 +15,13 @@ internal class ConnectionFactory(
     private val semaphore = Semaphore(maxConnectionsCount)
 
     suspend fun connect(
-        address: InetSocketAddress,
+        remoteAddress: SocketAddress,
+        localAddress: SocketAddress? = null,
         configuration: SocketOptions.TCPClientSocketOptions.() -> Unit = {}
     ): Socket {
         semaphore.acquire()
         return try {
-            aSocket(selector).tcpNoDelay().tcp().connect(address, configuration)
+            aSocket(selector).tcpNoDelay().tcp().connect(remoteAddress, localAddress, configuration)
         } catch (cause: Throwable) {
             // a failure or cancellation
             semaphore.release()
