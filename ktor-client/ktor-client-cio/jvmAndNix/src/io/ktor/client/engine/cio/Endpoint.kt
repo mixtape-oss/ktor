@@ -127,7 +127,7 @@ internal class Endpoint(
 
     private fun getRequestTimeout(
         configuration: HttpTimeout.HttpTimeoutCapabilityConfiguration?
-    ): Long = if (configuration?.requestTimeoutMillis != null) Long.MAX_VALUE else config.requestTimeout
+    ): Long = configuration?.requestTimeoutMillis ?: config.requestTimeout
 
     private suspend fun createPipeline(request: HttpRequestData) {
         val connection = connect(request)
