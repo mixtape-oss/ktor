@@ -152,13 +152,13 @@ internal class Endpoint(
             repeat(connectAttempts) {
                 val address = InetSocketAddress(host, port)
 
-                val connect: suspend CoroutineScope.() -> Socket = {
+                val connect: suspend CoroutineScope.() -> Connection = {
                     connectionFactory.connect(address) {
                         this.socketTimeout = socketTimeout
                     }
                 }
 
-                val socket = when (connectTimeout) {
+                val connection = when (connectTimeout) {
                     HttpTimeout.INFINITE_TIMEOUT_MS -> connect()
                     else -> {
                         val connection = withTimeoutOrNull(connectTimeout, connect)
@@ -170,7 +170,6 @@ internal class Endpoint(
                     }
                 }
 
-                val connection = socket.connection()
                 if (!secure) return@connect connection
 
                 try {
@@ -184,7 +183,7 @@ internal class Endpoint(
                     return tlsSocket.connection()
                 } catch (cause: Throwable) {
                     try {
-                        socket.close()
+                        connection.socket.close()
                     } catch (_: Throwable) {
                     }
 

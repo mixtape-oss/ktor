@@ -4,13 +4,12 @@
 
 package io.ktor.client.engine.cio
 
-import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
 import io.ktor.util.collections.*
 import kotlinx.coroutines.sync.*
 
 internal class ConnectionFactory(
-    private val selector: SelectorManager,
+    private val socketFactory: SocketFactory,
     connectionsLimit: Int,
     private val addressConnectionsLimit: Int
 ) {
@@ -19,14 +18,14 @@ internal class ConnectionFactory(
 
     suspend fun connect(
         address: InetSocketAddress,
-        configuration: SocketOptions.TCPClientSocketOptions.() -> Unit = {}
-    ): Socket {
+        configuration: SocketOptions.TCPClientSocketOptions.() -> Unit
+    ): Connection {
         limit.acquire()
         val addressSemaphore = addressLimit.computeIfAbsent(address) { Semaphore(addressConnectionsLimit) }
         addressSemaphore.acquire()
 
         return try {
-            aSocket(selector).tcpNoDelay().tcp().connect(address, configuration)
+            socketFactory.create(address, configuration)
         } catch (cause: Throwable) {
             // a failure or cancellation
             addressSemaphore.release()

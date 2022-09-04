@@ -13,8 +13,15 @@ import kotlin.native.concurrent.*
  */
 public fun hostIsIp(host: String): Boolean = IP_PARSER.match(host)
 
+/**
+ * Check if [host] is IPv4 address.
+ */
+public fun hostIsIpv4(host: String): Boolean = IPV4_PARSER.match(host)
+
 private val IPv4address = digits then "." then digits then "." then digits then "." then digits
 
 private val IPv6address = "[" then atLeastOne(hex or ":") then "]"
 
 private val IP_PARSER = (IPv4address or IPv6address).buildRegexParser()
+
+private val IPV4_PARSER = IPv4address.buildRegexParser()

@@ -33,8 +33,14 @@ internal class CIOEngine(
 
     private val selectorManager: SelectorManager by lazy { SelectorManager(dispatcher) }
 
+    private val socketFactory = if (config.proxy?.type == ProxyType.SOCKS) {
+        SocksSocketFactory(selectorManager, config.proxy!!)
+    } else {
+        DefaultSocketFactory(selectorManager)
+    }
+
     private val connectionFactory = ConnectionFactory(
-        selectorManager,
+        socketFactory,
         config.maxConnectionsCount,
         config.endpoint.maxConnectionsPerRoute
     )
